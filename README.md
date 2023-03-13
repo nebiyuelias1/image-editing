@@ -5,9 +5,9 @@ perform various operations on them. Consider it to be a miniature Photoshop.
 
 The operations are summarized here:
 
-|Categories|Methods|Description|Implemented|
-|----------|-------|-----------|-----------|
-|Transform |To_Grayscale() |Convert image to grayscale|✅         |
-|Quantized|Quant_Uniform()|Convert the image to an 8 bit image using uniform quantization|✅         |
-|          |Quant_Populosity()|Convert the image to an 8 bit image using populosity quantization| ❌|
-|Dithering|Dither_Threshold()|Dither an image to black and white using threshold dithering with a threshold of 0.5|✅
+|Categories|Methods|Operation|Description|Implemented|
+|----------|-------|---------|-----------|-----------|
+|Transform |To_Grayscale()|gray|Convert image to grayscale|✅|
+|Quantized|Quant_Uniform()|quant-unif|Convert the image to an 8 bit image using uniform quantization|✅         |
+|          |Quant_Populosity()|quant-popul|Convert the image to an 8 bit image using populosity quantization| ❌|
+|Dithering|Dither_Threshold()|dither-thresh|Dither an image to black and white using threshold dithering with a threshold of 0.5|✅
