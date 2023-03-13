@@ -20,6 +20,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <climits>
 
 using namespace std;
 
@@ -205,7 +206,7 @@ TargaImage* TargaImage::Load_Image(char *filename)
 ///////////////////////////////////////////////////////////////////////////////
 //
 //      Convert image to grayscale.  Red, green, and blue channels should all 
-//  contain grayscale value.  Alpha channel shoould be left unchanged.  Return
+//  contain grayscale value.  Alpha channel should be left unchanged.  Return
 //  success of operation.
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,8 +242,63 @@ bool TargaImage::To_Grayscale()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Quant_Uniform()
 {
-    ClearToBlack();
-    return false;
+    // If there is no image data quit immediately.
+    if (!data) {
+        return false;
+    }
+
+    // Define the color palette:
+    const int num_blue_shades = 4;
+    const int num_red_shades = 8;
+    const int num_green_shades = 8;
+    
+    // Color shade value = (255 / (number of shades - 1)) * shade index
+    const int blue_shades[num_blue_shades] = {0, 85, 170, 255};
+    const int red_shades[num_red_shades] = {0, 32, 64, 96, 128, 160, 192, 224};
+    const int green_shades[num_green_shades] = {0, 32, 64, 96, 128, 160, 192, 224};
+
+    // Define the color lookup tables.
+    uint8_t blue_lut[256];
+    uint8_t red_lut[256];
+    uint8_t green_lut[256];
+
+    for (int i = 0; i < 256; i++) {
+        int closest_blue_shade = 0;
+        int closest_red_shade = 0;
+        int closest_green_shade = 0;
+        int min_distance = INT_MAX;
+
+        for (int j = 0; j < num_blue_shades; j++) {
+            for (int k = 0; k < num_red_shades; k++) {
+                for (int l = 0; l < num_green_shades; l++) {
+                    // Calculate the Euclidean distance between the original color and the palette color.
+                    int distance = pow(i - blue_shades[j], 2) + pow(i - green_shades[l], 2) + pow(i - red_shades[k], 2);
+                    if (distance < min_distance) {
+                        min_distance = distance;
+                        closest_blue_shade = blue_shades[j];
+                        closest_red_shade = red_shades[k];
+                        closest_green_shade = green_shades[l];
+                    }
+                }
+            }
+        }
+
+        blue_lut[i] = closest_blue_shade;
+        red_lut[i] = closest_red_shade;
+        green_lut[i] = closest_green_shade;
+    }
+
+    int numPixels = width * height;
+    for (int i = 0; i < numPixels; i++)
+    {
+        uint8_t *pixel = data + i * 4;
+        pixel[0] = red_lut[pixel[0]];
+        pixel[1] = green_lut[pixel[1]];
+        pixel[2] = blue_lut[pixel[2]];
+    }
+
+    
+    return true;
 }// Quant_Uniform
 
 
