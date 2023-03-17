@@ -21,6 +21,11 @@
 #include <vector>
 #include <algorithm>
 #include <climits>
+#include <limits>
+#include <map>
+#include <unordered_map>
+#include <functional>
+#include <cfloat>
 
 using namespace std;
 
@@ -251,7 +256,7 @@ bool TargaImage::Quant_Uniform()
     const int num_blue_shades = 4;
     const int num_red_shades = 8;
     const int num_green_shades = 8;
-    
+
     // Color shade value = (255 / (number of shades - 1)) * shade index
     const int blue_shades[num_blue_shades] = {0, 85, 170, 255};
     const int red_shades[num_red_shades] = {0, 32, 64, 96, 128, 160, 192, 224};
@@ -262,18 +267,23 @@ bool TargaImage::Quant_Uniform()
     uint8_t red_lut[256];
     uint8_t green_lut[256];
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++)
+    {
         int closest_blue_shade = 0;
         int closest_red_shade = 0;
         int closest_green_shade = 0;
         int min_distance = INT_MAX;
 
-        for (int j = 0; j < num_blue_shades; j++) {
-            for (int k = 0; k < num_red_shades; k++) {
-                for (int l = 0; l < num_green_shades; l++) {
+        for (int j = 0; j < num_blue_shades; j++)
+        {
+            for (int k = 0; k < num_red_shades; k++)
+            {
+                for (int l = 0; l < num_green_shades; l++)
+                {
                     // Calculate the Euclidean distance between the original color and the palette color.
                     int distance = pow(i - blue_shades[j], 2) + pow(i - green_shades[l], 2) + pow(i - red_shades[k], 2);
-                    if (distance < min_distance) {
+                    if (distance < min_distance)
+                    {
                         min_distance = distance;
                         closest_blue_shade = blue_shades[j];
                         closest_red_shade = red_shades[k];
@@ -297,11 +307,12 @@ bool TargaImage::Quant_Uniform()
         pixel[2] = blue_lut[pixel[2]];
     }
 
-    
     return true;
 }// Quant_Uniform
 
-
+bool compare_pair(const std::pair<int, RGBColor>& lhs, const std::pair<int, RGBColor>& rhs) {
+    return lhs.first > rhs.first;
+}
 ///////////////////////////////////////////////////////////////////////////////
 //
 //      Convert the image to an 8 bit image using populosity quantization.  
@@ -310,8 +321,60 @@ bool TargaImage::Quant_Uniform()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Quant_Populosity()
 {
-    ClearToBlack();
-    return false;
+    // If there is no image data quit immediately.
+    if (!data) {
+        return false;
+    }
+
+    // Step 1: Perform uniform quantization to 32 shades of each primary
+    Quant_Uniform_To_N_Shades(32, 32, 32);
+
+    
+    // Step 2: Build a color usage histogram
+    std::unordered_map<unsigned int, int> histogram;
+    for (int i = 0; i < width * height; i++)
+    {
+        unsigned int color = ((data[i * 4] >> 3) << 11) | ((data[i * 4 + 1] >> 3) << 6) | (data[i * 4 + 2] >> 3);
+        histogram[color]++;
+    }
+
+    // Step 3: Sort the colors by usage frequency
+    std::vector<std::pair<unsigned int, int>> colors(histogram.begin(), histogram.end());
+    std::sort(colors.begin(), colors.end(), [](const std::pair<unsigned int, int>& a, const std::pair<unsigned int, int>& b) { return a.second > b.second; });
+
+    // Step 4: Map each original color to its closest chosen color
+    for (int i = 0; i < width * height; i++)
+    {
+        unsigned int color = ((data[i * 4] >> 3) << 11) | ((data[i * 4 + 1] >> 3) << 6) | (data[i * 4 + 2] >> 3);
+
+        int closestColorIndex = 0;
+        int closestColorDistance = std::numeric_limits<int>::max();
+
+        for (int j = 0; j < std::min(256, (int)colors.size()); j++)
+        {
+            unsigned int chosenColor = colors[j].first;
+
+            int distance = std::sqrt(
+                std::pow((int)((color >> 11) & 0x1F) - (int)((chosenColor >> 11) & 0x1F), 2) +
+                std::pow((int)((color >> 6) & 0x1F) - (int)((chosenColor >> 6) & 0x1F), 2) +
+                std::pow((int)(color & 0x1F) - (int)(chosenColor & 0x1F), 2)
+            );
+
+            if (distance < closestColorDistance)
+            {
+                closestColorIndex = j;
+                closestColorDistance = distance;
+            }
+        }
+
+        unsigned int chosenColor = colors[closestColorIndex].first;
+        data[i * 4] = ((chosenColor >> 11) & 0x1F) << 3;
+        data[i * 4 + 1] = ((chosenColor >> 6) & 0x1F) << 3;
+        data[i * 4 + 2] = (chosenColor & 0x1F) << 3;
+    }
+
+
+    return true;
 }// Quant_Populosity
 
 
@@ -808,6 +871,56 @@ void TargaImage::Paint_Stroke(const Stroke& s) {
    }
 }
 
+// Generic uniform quantization
+void TargaImage::Quant_Uniform_To_N_Shades(const int num_red_shades, const int num_green_shades, const int num_blue_shades)
+{
+    // Convert the image to RGB format
+    unsigned char* rgb_data = To_RGB();
+
+    // Calculate the number of pixels in the image
+    int num_pixels = width * height;
+
+    // Loop over each pixel in the image
+    for (int i = 0; i < num_pixels; i++) {
+        // Calculate the index of the current pixel
+        int index = i * 3;
+
+        // Quantize the red channel
+        int red = rgb_data[index];
+        int red_quantized = (int)((red / 255.0f) * num_red_shades) * (255 / num_red_shades);
+
+        // Quantize the green channel
+        int green = rgb_data[index + 1];
+        int green_quantized = (int)((green / 255.0f) * num_green_shades) * (255 / num_green_shades);
+
+        // Quantize the blue channel
+        int blue = rgb_data[index + 2];
+        int blue_quantized = (int)((blue / 255.0f) * num_blue_shades) * (255 / num_blue_shades);
+
+        // Set the quantized RGB values for the current pixel
+        rgb_data[index] = red_quantized;
+        rgb_data[index + 1] = green_quantized;
+        rgb_data[index + 2] = blue_quantized;
+    }
+
+    // Convert the image back to pre-multiplied RGBA format
+    unsigned char* rgba_data = new unsigned char[num_pixels * 4];
+    for (int i = 0; i < num_pixels; i++) {
+        int rgba_index = i * 4;
+        int rgb_index = i * 3;
+        rgba_data[rgba_index] = rgb_data[rgb_index];
+        rgba_data[rgba_index + 1] = rgb_data[rgb_index + 1];
+        rgba_data[rgba_index + 2] = rgb_data[rgb_index + 2];
+        rgba_data[rgba_index + 3] = 255; // alpha channel set to fully opaque
+    }
+
+    // Replace the current pixel data with the quantized pixel data
+    delete[] data;
+    data = rgba_data;
+
+    // Clean up
+    delete[] rgb_data;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -826,4 +939,3 @@ Stroke::Stroke(unsigned int iradius, unsigned int ix, unsigned int iy,
    radius(iradius),x(ix),y(iy),r(ir),g(ig),b(ib),a(ia)
 {
 }
-
