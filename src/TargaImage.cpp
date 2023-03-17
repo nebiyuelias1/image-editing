@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <functional>
 #include <cfloat>
+#include <random>
 
 using namespace std;
 
@@ -422,8 +423,29 @@ bool TargaImage::Dither_Threshold()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_Random()
 {
-    ClearToBlack();
-    return false;
+       // Convert image to grayscale
+    if (!To_Grayscale()) {
+        return false;
+    }
+
+    // Random number generator
+    std::random_device rd;
+    std::default_random_engine generator(rd());
+    std::uniform_real_distribution<float> distribution(-0.2, 0.2);
+
+    // Loop through all pixels
+    for (int i = 0; i < width * height; i++) {
+        // Calculate new pixel value with random dithering
+        float new_value = data[i * 4] / 255.0f + distribution(generator);
+        new_value = new_value > 0.5f ? 1.0f : 0.0f;
+
+        // Set new pixel value
+        data[i * 4] = static_cast<unsigned char>(new_value * 255.0f);
+        data[i * 4 + 1] = data[i * 4];
+        data[i * 4 + 2] = data[i * 4];
+    }
+
+    return true;
 }// Dither_Random
 
 
