@@ -423,7 +423,7 @@ bool TargaImage::Dither_Threshold()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_Random()
 {
-       // Convert image to grayscale
+    // Convert image to grayscale
     if (!To_Grayscale()) {
         return false;
     }
@@ -448,7 +448,6 @@ bool TargaImage::Dither_Random()
     return true;
 }// Dither_Random
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 //      Perform Floyd-Steinberg dithering on the image.  Return success of 
@@ -457,8 +456,60 @@ bool TargaImage::Dither_Random()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_FS()
 {
-    ClearToBlack();
-    return false;
+    if (!data) {
+        return false;
+    }
+
+    To_Grayscale();
+
+    // Iterate over each pixel in the image
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            int offset = (y * width * 4) + (x * 4);
+            unsigned char * pixel = data + offset;
+
+            uint8_t gray = *pixel;
+
+
+            // Calculate the new black or white value based on the grayscale value
+            uint8_t newValue = (gray < 128) ? 0 : 255;
+
+             // Set the new value in the dithered image buffer
+            pixel[0] = newValue;
+            pixel[1] = newValue;
+            pixel[2] = newValue;
+
+            // Calculate the error between the old and new value
+            int error = gray - newValue;
+
+            // Distribute the error to the surrounding pixels using the Floyd-Steinberg pattern
+            if (x < width - 1) {
+                data[(y * width + x + 1) * 4] += error * 7.0 / 16;
+                data[(y * width + x + 1) * 4 + 1] += error * 7.0 / 16;
+                data[(y * width + x + 1) * 4 + 2] += error * 7.0 / 16;
+            }
+            if (x > 0 && y < height - 1) {
+                data[((y + 1) * width + x - 1) * 4] += error * 3.0 / 16;
+                data[((y + 1) * width + x - 1) * 4 + 1] += error * 3.0 / 16;
+                data[((y + 1) * width + x - 1) * 4 + 2] += error * 3.0 / 16;
+            }
+            if (y < height - 1) {
+                data[((y + 1) * width + x) * 4] += error * 5.0 / 16;
+                data[((y + 1) * width + x) * 4 + 1] += error * 5.0 / 16;
+                data[((y + 1) * width + x) * 4 + 2] += error * 5.0 / 16;
+            }
+            if (x < width - 1 && y < height - 1) {
+                data[((y + 1) * width + x + 1) * 4] += error * 1.0 / 16;
+                data[((y + 1) * width + x + 1) * 4 + 1] += error * 1.0 / 16;
+                data[((y + 1) * width + x + 1) * 4 + 2] += error * 1.0 / 16;
+            }
+        }
+    }
+
+    // Clean up
+    return true;
 }// Dither_FS
 
 
