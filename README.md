@@ -13,6 +13,6 @@ The operations are summarized here:
 |Dithering|Dither_Threshold()|dither-thresh|Dither an image to black and white using threshold dithering with a threshold of 0.5|✅|
 ||Dither_Random()|dither-rand|Dither an image to black and white using random dithering|✅|
 ||Dither_FS()|dither-fs|Dither an image to black and white using Floyd-Steinberg dithering|✅|
-||Dither_Bright()|dither-bright|Dither an image to black and white using threshold dithering with a threshold chosen to keep the average brightness constant|❌|
-||Dither_Cluster()|dither-cluster|Dither an image to black and white using cluster dithering|❌|
+||Dither_Bright()|dither-bright|Dither an image to black and white using threshold dithering with a threshold chosen to keep the average brightness constant|✅|
+||Dither_Cluster()|dither-cluster|Dither an image to black and white using cluster dithering|✅|
 ||Dither_Color()|dither-color|Dither an image to 8 bit color using Floyd-Steinberg dithering|❌|

@@ -521,8 +521,47 @@ bool TargaImage::Dither_FS()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_Bright()
 {
-    ClearToBlack();
-    return false;
+    // If there is no image data, return false
+    if (!data) {
+        return false;
+    }
+
+        // Convert the image to grayscale
+    if (!To_Grayscale()) {
+        return false;
+    }
+
+    // Compute the average brightness of the image
+    float avgBrightness = 0.0f;
+    for (int i = 0; i < width * height; i++) {
+        avgBrightness += static_cast<float>(data[i * 4]);
+    }
+    avgBrightness /= static_cast<float>(width * height);
+
+    // Compute the threshold for threshold dithering
+    int threshold = static_cast<int>(avgBrightness);
+
+    int numPixels = width * height;
+
+    for (int i = 0; i < numPixels; i++) {
+        // Extract the RGB values from the pixel data
+        unsigned char* pixel = data + i * 4;
+
+        // Threshold dithering
+        if (pixel[0] < threshold) {
+            // Set the pixel to black
+            pixel[0] = 0;
+            pixel[1] = 0;
+            pixel[2] = 0;
+        } else {
+            // Set the pixel to white
+            pixel[0] = 255;
+            pixel[1] = 255;
+            pixel[2] = 255;
+        }
+    }
+
+    return true;
 }// Dither_Bright
 
 
@@ -533,8 +572,45 @@ bool TargaImage::Dither_Bright()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_Cluster()
 {
-    ClearToBlack();
-    return false;
+    // If there is no image data, return false
+    if (!data) {
+        return false;
+    }
+
+        // Convert the image to grayscale
+    if (!To_Grayscale()) {
+        return false;
+    }
+
+    // Define the dither matrix
+    double dither_matrix[4][4] = {
+        {0.7059, 0.3529, 0.5882, 0.2353},
+        {0.0588, 0.9412, 0.8235, 0.4118},
+        {0.4706, 0.7647, 0.8824, 0.1176},
+        {0.1765, 0.5294, 0.2941, 0.6471}
+    };
+
+    // Loop through each pixel and apply the dither matrix
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double threshold = dither_matrix[x%4][y%4];
+            int index = y*width*4 + x*4;
+
+            if (data[index] >= threshold*255.0) {
+                // Set pixel to white
+                data[index] = 255;
+                data[index+1] = 255;
+                data[index+2] = 255;
+            } else {
+                // Set pixel to black
+                data[index] = 0;
+                data[index+1] = 0;
+                data[index+2] = 0;
+            }
+        }
+    }
+    
+    return true;
 }// Dither_Cluster
 
 
