@@ -27,6 +27,7 @@
 #include <functional>
 #include <cfloat>
 #include <random>
+#include <algorithm>
 
 using namespace std;
 
@@ -623,8 +624,90 @@ bool TargaImage::Dither_Cluster()
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Dither_Color()
 {
-    ClearToBlack();
-    return false;
+    // If there is no image data, return false
+    if (!data) {
+        return false;
+    }
+
+    // Define the color table corresponding to uniform quantization
+    const int color_table_size = 256;
+    unsigned char color_table[color_table_size][3];
+    int color_index = 0;
+    for (int r = 0; r <= 255; r += 36) {
+        for (int g = 0; g <= 255; g += 36) {
+            for (int b = 0; b <= 255; b += 85) {
+                color_table[color_index][0] = r;
+                color_table[color_index][1] = g;
+                color_table[color_index][2] = b;
+                color_index++;
+            }
+        }
+    }
+    
+        // Loop through each pixel and apply Floyd-Steinberg dithering
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int index = y*width*4 + x*4;
+            int old_r = data[index];
+            int old_g = data[index+1];
+            int old_b = data[index+2];
+            
+            // Find the closest color in the color table
+            int best_color = 0;
+            int best_distance = 256*256*4;
+            for (int i = 0; i < color_table_size; i++) {
+                int r_diff = old_r - color_table[i][0];
+                int g_diff = old_g - color_table[i][1];
+                int b_diff = old_b - color_table[i][2];
+                int distance = r_diff*r_diff + g_diff*g_diff + b_diff*b_diff;
+                if (distance < best_distance) {
+                    best_color = i;
+                    best_distance = distance;
+                }
+            }
+            
+            // Set the pixel to the closest color
+            data[index] = color_table[best_color][0];
+            data[index+1] = color_table[best_color][1];
+            data[index+2] = color_table[best_color][2];
+            
+            // Calculate the error
+            int error_r = old_r - data[index];
+            int error_g = old_g - data[index+1];
+            int error_b = old_b - data[index+2];
+            
+            // Distribute the error to neighboring pixels
+            if (x < width-1) {
+                // Right neighbor
+                int neighbor_index = index + 4;
+                data[neighbor_index] = std::min(255, std::max(0, data[neighbor_index] + (7*error_r)/16));
+                data[neighbor_index+1] = std::min(255, std::max(0, data[neighbor_index+1] + (7*error_g)/16));
+                data[neighbor_index+2] = std::min(255, std::max(0, data[neighbor_index+2] + (7*error_b)/16));
+            } if (x > 0 && y < height - 1) {
+                // Bottom-left neighbor
+                int neighbor_index = index + width*4 - 4;
+                data[neighbor_index] = std::min(255, std::max(0, data[neighbor_index] + (3*error_r)/16));
+                data[neighbor_index+1] = std::min(255, std::max(0, data[neighbor_index+1] + (3*error_r)/16));
+                data[neighbor_index+2] = std::min(255, std::max(0, data[neighbor_index+2] + (3*error_r)/16));
+            }
+            if (y < height - 1) {
+                // Bottom neighbor
+                int neighbor_index = index + width*4;
+                data[neighbor_index] = std::min(255, std::max(0, data[neighbor_index] + (5*error_r)/16));
+                data[neighbor_index+1] = std::min(255, std::max(0, data[neighbor_index+1] + (5*error_r)/16));
+                data[neighbor_index+2] = std::min(255, std::max(0, data[neighbor_index+2] + (5*error_r)/16));
+            }
+            if (x < width - 1 && y < height - 1) {
+                // Bottom right neighbor
+                int neighbor_index = index + width*4 + 4;
+                data[neighbor_index] = std::min(255, std::max(0, data[neighbor_index] + (1*error_r)/16));
+                data[neighbor_index+1] = std::min(255, std::max(0, data[neighbor_index+1] + (1*error_r)/16));
+                data[neighbor_index+2] = std::min(255, std::max(0, data[neighbor_index+2] + (1*error_r)/16));
+            }
+        }
+    }
+    
+    return true;
 }// Dither_Color
 
 
