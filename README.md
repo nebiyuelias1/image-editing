@@ -17,3 +17,5 @@ The operations are summarized here:
 ||Dither_Cluster()|dither-cluster|Dither an image to black and white using cluster dithering|✅|
 ||Dither_Color()|dither-color|Dither an image to 8 bit color using Floyd-Steinberg dithering|✅|
 |Filtering|Filter_Box()|filter-box|Apply a 5x5 box filter|✅|
+||Filter_Bartlett()|filter-bartlett|Perform 5x5 Bartlett filter on this image|✅|
+||Filter_Gaussian()|filter-gauss|Apply a 5x5 Gaussian filter|✅|
