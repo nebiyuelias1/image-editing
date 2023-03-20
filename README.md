@@ -16,3 +16,4 @@ The operations are summarized here:
 ||Dither_Bright()|dither-bright|Dither an image to black and white using threshold dithering with a threshold chosen to keep the average brightness constant|✅|
 ||Dither_Cluster()|dither-cluster|Dither an image to black and white using cluster dithering|✅|
 ||Dither_Color()|dither-color|Dither an image to 8 bit color using Floyd-Steinberg dithering|✅|
+|Filtering|Filter_Box()|filter-box|Apply a 5x5 box filter|✅|
