@@ -1032,8 +1032,68 @@ bool TargaImage::Filter_Gaussian()
 
 bool TargaImage::Filter_Gaussian_N( unsigned int N )
 {
-    ClearToBlack();
-   return false;
+        // If there is no image data or N is even, return false
+    if (!data || N % 2 == 0) {
+        return false;
+    }
+
+    // Allocate memory for the kernel
+    float* kernel = new float[N * N];
+
+    // Calculate the binomial coefficients and filter values
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            int k = abs(i - (static_cast<int>(N) / 2));
+            int l = abs(j - (static_cast<int>(N) / 2));
+            float coeff = 1.0f;
+            for (int m = 1; m <= k; m++) {
+                coeff *= (float)(N - m) / m;
+            }
+            for (int m = 1; m <= l; m++) {
+                coeff *= (float)(N - m) / m;
+            }
+            kernel[i * N + j] = coeff * pow(0.5f, k + l + 2);
+        }
+    }
+
+    // Normalize the kernel
+    float kernel_sum = 0.0f;
+    for (int i = 0; i < N * N; i++) {
+        kernel_sum += kernel[i];
+    }
+    for (int i = 0; i < N * N; i++) {
+        kernel[i] /= kernel_sum;
+    }
+
+    // Create a temporary copy of the image data
+    unsigned char* temp_data = new unsigned char[width * height * 4];
+    memcpy(temp_data, data, width * height * 4);
+
+    // Apply the Gaussian filter to the image data
+    int offset = N / 2;
+    for (int y = offset; y < height - offset; y++) {
+        for (int x = offset; x < width - offset; x++) {
+            float r = 0.0f, g = 0.0f, b = 0.0f;
+            for (int i = -offset; i <= offset; i++) {
+                for (int j = -offset; j <= offset; j++) {
+                    int index = ((y + i) * width + (x + j)) * 4;
+                    r += kernel[(i + offset) * N + (j + offset)] * temp_data[index];
+                    g += kernel[(i + offset) * N + (j + offset)] * temp_data[index + 1];
+                    b += kernel[(i + offset) * N + (j + offset)] * temp_data[index + 2];
+                }
+            }
+            int index = (y * width + x) * 4;
+            data[index] = (unsigned char)r;
+            data[index + 1] = (unsigned char)g;
+            data[index + 2] = (unsigned char)b;
+        }
+    }
+
+    // Free the memory used by the kernel and temporary data
+    delete[] kernel;
+    delete[] temp_data;
+
+    return true;
 }// Filter_Gaussian_N
 
 
