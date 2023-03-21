@@ -1105,8 +1105,50 @@ bool TargaImage::Filter_Gaussian_N( unsigned int N )
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Filter_Edge()
 {
-    ClearToBlack();
-    return false;
+   // If there is no image data, return false
+    if (!data) {
+        return false;
+    }
+
+    // Define the kernel for the edge detection filter
+    float kernel[25] = {
+        -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1,
+        -1, -1, 24, -1, -1,
+        -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1
+    };
+
+    // Create a temporary copy of the image data
+    unsigned char* temp_data = new unsigned char[width * height * 4];
+    memcpy(temp_data, data, width * height * 4);
+
+    // Apply the edge detection filter to the image data
+    for (int y = 2; y < height - 2; y++) {
+        for (int x = 2; x < width - 2; x++) {
+            float r = 0.0f, g = 0.0f, b = 0.0f;
+
+            // Apply the kernel to the current pixel and its neighbors
+            for (int ky = -2; ky <= 2; ky++) {
+                for (int kx = -2; kx <= 2; kx++) {
+                    int index = ((y + ky) * width + (x + kx)) * 4;
+                    r += kernel[(ky + 2) * 5 + (kx + 2)] * temp_data[index];
+                    g += kernel[(ky + 2) * 5 + (kx + 2)] * temp_data[index + 1];
+                    b += kernel[(ky + 2) * 5 + (kx + 2)] * temp_data[index + 2];
+                }
+            }
+
+            // Update the pixel value in the original image data
+            int index = (y * width + x) * 4;
+            data[index] = (unsigned char)std::abs(r);
+            data[index + 1] = (unsigned char)std::abs(g);
+            data[index + 2] = (unsigned char)std::abs(b);
+        }
+    }
+
+    delete[] temp_data;
+
+    return true;
 }// Filter_Edge
 
 
