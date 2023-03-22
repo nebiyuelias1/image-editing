@@ -43,7 +43,10 @@ std::vector<char*>  vsStudentNames;
 void MakeNames()
 {
     // ************ ADD YOUR NAME HERE ****************************************
-    // vsStudentNames.push_back("Nebiyu Elias Talefe");
+    char * nebiyu = "M11115822/Nebiyu Elias Talefe";
+    vsStudentNames.push_back(nebiyu);
+    char * bayisa = "D11115810/Bayisa Kune Mamade";
+    vsStudentNames.push_back(bayisa);
 }// MakeNames
 
 
