@@ -312,9 +312,7 @@ bool TargaImage::Quant_Uniform()
     return true;
 }// Quant_Uniform
 
-bool compare_pair(const std::pair<int, RGBColor>& lhs, const std::pair<int, RGBColor>& rhs) {
-    return lhs.first > rhs.first;
-}
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 //      Convert the image to an 8 bit image using populosity quantization.  
@@ -848,7 +846,7 @@ bool TargaImage::Difference(TargaImage* pImage)
 ///////////////////////////////////////////////////////////////////////////////
 bool TargaImage::Filter_Box()
 {
-     // If there is no image data, return false
+    // If there is no image data, return false
     if (!data) {
         return false;
     }

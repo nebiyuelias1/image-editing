@@ -9,7 +9,7 @@ The operations are summarized here:
 |----------|-------|---------|-----------|-----------|
 |Transform |To_Grayscale()|gray|Convert image to grayscale|✅|
 |Quantized|Quant_Uniform()|quant-unif|Convert the image to an 8 bit image using uniform quantization|✅         |
-|          |Quant_Populosity()|quant-popul|Convert the image to an 8 bit image using populosity quantization| ✅|
+|          |Quant_Populosity()|quant-pop|Convert the image to an 8 bit image using populosity quantization| ✅|
 |Dithering|Dither_Threshold()|dither-thresh|Dither an image to black and white using threshold dithering with a threshold of 0.5|✅|
 ||Dither_Random()|dither-rand|Dither an image to black and white using random dithering|✅|
 ||Dither_FS()|dither-fs|Dither an image to black and white using Floyd-Steinberg dithering|✅|
